@@ -5,9 +5,9 @@ const ENTRY = 32;
 const ATR_MIN_BPS = 6n;
 const ARM_BPS = 80n;
 const TRAIL_BPS = 20n;
-const TRAIL2_BPS = 10n;
-const ARM2_BPS = 100n;
-const TP_BPS = 150n;
+const TRAIL2_BPS = 3n;
+const ARM2_BPS = 110n;
+const TP_BPS = 200n;
 const STOP_BPS = 100n;
 const COOLDOWN = 15;
 const history: { high: bigint; low: bigint; tr: bigint }[] = [];
@@ -62,13 +62,14 @@ await runBars({
       if (close > best) best = close;
       if (value * BPS >= held.cost * (BPS + ARM_BPS)) armed = true;
       const stop = value * BPS <= held.cost * (BPS - STOP_BPS);
-      // Once the position is up 1%, tighten the trail to 10 bps so a
+      // Once the position is up 1.1%, tighten the trail to 3 bps so a
       // late-day peak is not given back while the trend is still running.
       let trailBps = TRAIL_BPS;
       if (value * BPS >= held.cost * (BPS + ARM2_BPS)) trailBps = TRAIL2_BPS;
       const trail = armed && close * BPS <= best * (BPS - trailBps);
-      // Take profit at +1.5% of cost: the dev day's first breakout peaked
-      // near +1.8% and faded, so banking the move beats trailing it.
+      // Take profit at +2.0% of cost: a backstop for a run that moons and
+      // then fades. The tightened trail normally exits first; on the dev
+      // day neither trade reached +2%, so the trail did all the work.
       const takeProfit = value * BPS >= held.cost * (BPS + TP_BPS);
       // Use the cost-based stop before arming, then the price-based trail.
       if (halted || stop || trail || takeProfit) exiting = true;

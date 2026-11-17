@@ -5,7 +5,7 @@
 
 A long-only, integer-only cbBTC breakout runner. Buy when the close exceeds the previous 32 bars' highest high, provided their mean true range is at least 6 bps of the current close. Use available cash within the weight cap, one position at a time.
 
-The actual filled position cost anchors a 1% stop, the 0.8% profit trigger, and a +1.5% take-profit. Once triggered, exit on a 20-bps retreat from the best close since entry; once the position is up 1%, the trail tightens to 10 bps. A confirmed exit starts a 15-observed-bar cooldown. A 12% equity drawdown permanently halts entries and requests liquidation. Exits retry until confirmed; every order has a 100-bps slippage cap. Stops are next-open orders, not guaranteed fill prices.
+The actual filled position cost anchors a 1% stop, the 0.8% profit trigger, and a +2.0% take-profit backstop. Once triggered, exit on a 20-bps retreat from the best close since entry; once the position is up 1.1%, the trail tightens to 3 bps. A confirmed exit starts a 15-observed-bar cooldown. A 12% equity drawdown permanently halts entries and requests liquidation. Exits retry until confirmed; every order has a 100-bps slippage cap. Stops are next-open orders, not guaranteed fill prices.
 
 Unlike the reference, there is no 30-bar channel exit or fixed profit sale. The strategy uses only past and current bars, never future prices, timestamps as a schedule, randomness, network access, or wall-clock time. The vendored SDK handles hello, batch replies, order identifiers, and done.
 
@@ -21,8 +21,9 @@ Same published 1,440-bar dev window, including fees, slippage, impact and final 
 | No channel exit, 40-bps trail | +14.110708 |
 | No volatility filter, 30-bps trail | -11.121262 |
 | Final runner | +24.292841 |
+| Round-3 runner (TP +2.0%, trail tightens to 3 bps at +1.1%) | +25.519104 |
 
-Final: 4 filled orders (2 completed round trips), zero rejections, maximum drawdown 0.9799685%, and +22.658130 USDC with doubled fees. Two replay action logs matched byte for byte. One dev day is limited evidence, not a guarantee of unseen performance.
+Final: 4 filled orders (2 completed round trips), zero rejections, maximum drawdown 0.91%, and +23.88 USDC with doubled fees. Two replay action logs matched byte for byte. One dev day is limited evidence, not a guarantee of unseen performance. Round-3 tuning swept ~600 further configs (fine ENTRY 28–40 grid, Chandelier/high-based trail, partial take-profit, 2-bar confirmation, tight second-stage trails); the winner also beat the round-2 runner on a 300× 1-hour-block bootstrap (58/300 profitable vs 53/300, median −21.06 vs −22.26). The dev-max sibling (trail tightens at +1.2%) scored +25.89 on dev and +24.25 at doubled fees per the grader, but its +0.37 edge rests on a single knife-edge threshold crossing — its doubled-fee number differs by $1.6 between the local replica and the grader — so the +1.1% version was kept for stability.
 
 ## Run it
 

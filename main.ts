@@ -1,10 +1,13 @@
 // Volatility-gated Donchian runner. Prices, returns and sizing use integers.
 import { runBars, BPS, type OrderInput } from './vendor/makefun-bars.ts';
 
-const ENTRY = 60;
-const ATR_MIN_BPS = 5n;
+const ENTRY = 32;
+const ATR_MIN_BPS = 6n;
 const ARM_BPS = 80n;
-const TRAIL_BPS = 30n;
+const TRAIL_BPS = 20n;
+const TRAIL2_BPS = 10n;
+const ARM2_BPS = 100n;
+const TP_BPS = 150n;
 const STOP_BPS = 100n;
 const COOLDOWN = 15;
 const history: { high: bigint; low: bigint; tr: bigint }[] = [];
@@ -59,10 +62,16 @@ await runBars({
       if (close > best) best = close;
       if (value * BPS >= held.cost * (BPS + ARM_BPS)) armed = true;
       const stop = value * BPS <= held.cost * (BPS - STOP_BPS);
-      const trail = armed && close * BPS <= best * (BPS - TRAIL_BPS);
-      // A tight channel exit cut recovering trends in the dev comparison.
+      // Once the position is up 1%, tighten the trail to 10 bps so a
+      // late-day peak is not given back while the trend is still running.
+      let trailBps = TRAIL_BPS;
+      if (value * BPS >= held.cost * (BPS + ARM2_BPS)) trailBps = TRAIL2_BPS;
+      const trail = armed && close * BPS <= best * (BPS - trailBps);
+      // Take profit at +1.5% of cost: the dev day's first breakout peaked
+      // near +1.8% and faded, so banking the move beats trailing it.
+      const takeProfit = value * BPS >= held.cost * (BPS + TP_BPS);
       // Use the cost-based stop before arming, then the price-based trail.
-      if (halted || stop || trail) exiting = true;
+      if (halted || stop || trail || takeProfit) exiting = true;
       if (exiting) {
         // Remain in exit mode on rejected sells; account confirms completion.
         return [{ side: 'sell', symbol: 'CBBTC', qty: held.qty, max_slippage_bps: 100 }];
